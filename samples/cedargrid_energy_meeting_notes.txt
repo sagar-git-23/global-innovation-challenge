@@ -1,0 +1,41 @@
+﻿CEDARGRID ENERGY — INTERNAL MEETING NOTES
+Fictional sample document for testing local document embeddings and retrieval
+Prepared: November 12, 2026
+Meeting: GridPilot pilot review and funding decision
+
+PURPOSE
+Decide whether CedarGrid should expand GridPilot, its internal renewable-energy forecasting pilot, from four trial sites to twelve operating sites. These notes are fictional and are provided only to test the meeting brief application's document upload, chunking, embedding, and retrieval flow.
+
+PROJECT STATUS
+GridPilot combines weather forecasts, turbine telemetry, and site-maintenance records to estimate next-day wind generation. The four-site pilot began on September 14, 2026. The operations team reports that the forecasts have been useful for shift planning, but the pilot has not yet run through a full winter weather cycle. The dashboard is currently available to the dispatch and operations teams only.
+
+SUCCESS MEASURE
+The pilot is considered successful if it reduces the mean absolute generation-forecast error by at least 15 percent against CedarGrid's existing day-ahead baseline over a continuous eight-week measurement period. The analytics team must publish the baseline and pilot calculations together, using the same sites and time windows, before any expansion decision. The current dashboard reports directional improvement, but the eight-week comparison is not complete.
+
+TIMELINE AND DECISION
+The executive review is scheduled for November 20, 2026. The team wants a go, pause, or stop decision by November 24 so procurement can reserve twelve sensor gateway units for a January 2027 deployment window. If the decision slips beyond November 24, the next available deployment window is estimated to be April 2027. Procurement has not placed an order and no expansion budget has been approved.
+
+INTEGRATION DEPENDENCY
+Before expansion, the data platform team must finish the read-only connector from GridPilot to the existing Atlas operations system. The connector is needed to reconcile site identifiers and maintenance windows. Priya Nair, the data platform lead, owns the connector; her team estimates completion by November 18, followed by a two-day validation with site operations. The current pilot uses a manual CSV export, so the integration is not yet proven at twelve-site scale.
+
+COST AND STAFFING
+The draft expansion estimate is $420,000 for the first year, including twelve gateway units, cloud hosting, integration work, and two additional operations analysts. Finance has not validated the estimate. The estimate excludes replacement hardware after the first year and does not include a contingency for the April deployment delay. No savings or revenue forecast has been approved.
+
+RISKS
+1. Winter weather may change forecast accuracy; the four-site pilot does not include enough winter data to settle this risk.
+2. The Atlas connector is a schedule dependency. A delay beyond November 18 leaves too little time for validation before the November 24 decision.
+3. Site identifiers differ between the telemetry feed and Atlas. The manual pilot process currently resolves some mismatches by hand.
+4. The $420,000 estimate is preliminary and should not be presented as an approved budget.
+5. Dispatchers have requested an alert when forecast confidence falls below the agreed threshold. That alert is not in the current pilot build.
+
+DECISIONS REQUESTED
+- Confirm whether the 15 percent forecast-error reduction is the right expansion threshold.
+- Decide whether the team should wait for the full eight-week comparison or approve a conditional January expansion.
+- Confirm whether the Atlas connector and two-day site validation are mandatory release gates.
+- Ask Finance to validate the $420,000 estimate and identify excluded costs before approval.
+- Assign an owner and date for the low-confidence forecast alert.
+
+TERMS
+Mean absolute error (MAE): the average absolute difference between forecast generation and measured generation. A lower value means forecasts were closer to actual output.
+Day-ahead baseline: CedarGrid's current process for estimating the next day's generation, used as the comparison for GridPilot.
+Conditional expansion: an approval that allows procurement or preparation to begin but requires stated checks to pass before site rollout.
