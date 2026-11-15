@@ -63,7 +63,8 @@ export class AppComponent implements OnDestroy {
   private updateRoute(path: string): void {
     this.isBifrost = path.startsWith('/benchmark');
     this.title = path.includes('/benchmark/agents') ? 'Agent registry'
-      : path.includes('/benchmark/runs') ? 'New benchmark'
+      : path.includes('/benchmark/runs/new') ? 'New benchmark'
+      : path.includes('/benchmark/runs/') ? 'Benchmark run'
       : path.includes('/benchmark/leaderboard') ? 'Leaderboard'
       : path.includes('/benchmark/findings') ? 'Findings & evidence'
       : path.includes('/benchmark') ? 'Overview'

@@ -69,15 +69,30 @@ In **New brief**, optionally add PDF, DOCX, or TXT files up to 10 MB. The origin
 
 The Angular app has a separate **Agent Benchmarking · Bifrost** section in the sidebar. It contains an overview, agent registry, benchmark setup, leaderboard, and security findings screens. The existing meeting brief routes and API remain separate.
 
-The screens are wired to a benchmark API proxied to the same FastAPI server. The teammate implementing the Bifrost backend can use these endpoints and payloads as the frontend contract:
+The screens use a benchmark API proxied to the same FastAPI server. Its routes and payloads are:
 
-- `GET /benchmark-api/agents` and `POST /benchmark-api/agents` for the agent registry. Agent fields: `name`, `type`, `framework`, `version`, `endpoint`, optional `description`, and `timeoutSeconds`.
+- `GET /benchmark-api/agents` and `POST /benchmark-api/agents` for the agent registry. Agent fields: `name`, `type`, `framework`, `version`, `endpoint`, optional `description`, `timeoutSeconds`, and optional `inputCostPer1M` / `outputCostPer1M` prices in USD.
 - `GET /benchmark-api/task-suites` to return suites with `id`, `name`, `description`, `totalTasks`, `functionalTaskCount`, `securityTaskCount`, and `estimatedDurationMinutes`.
 - `POST /benchmark-api/benchmark-runs` accepts `agentIds`, `taskSuiteId`, `runsPerTask`, `timeoutSeconds`, and `captureEvidence`.
-- `GET /benchmark-api/leaderboard` returns comparable metrics such as overall, functional, and security scores, average latency, and completed runs.
+- `GET /benchmark-api/benchmark-runs/{runId}` returns live run status, aggregate metrics, and per-attempt details.
+- `GET /benchmark-api/leaderboard` returns comparable success, quality, safety, reliability, latency, token, and cost metrics for completed runs.
 - `GET /benchmark-api/findings` returns findings with severity, title, description, affected agent, and status.
 
-Responses can be plain JSON or wrapped in `{ "data": ... }`. The Angular proxy forwards `/benchmark-api` to FastAPI on port 8000. Until those endpoints are implemented, the Bifrost screens show the API connection error or an empty state; they do not invent benchmark results.
+The Bifrost API is implemented in `backend/benchmarking.py` and stores agents, versioned suites, runs, and per-attempt results in Neon Postgres. Startup creates or migrates these tables and seeds the five-task `starter-v1` suite (version 2.0). A run is queued as a FastAPI background task; `GET /benchmark-api/benchmark-runs/{runId}` returns live status, aggregate scores, and per-task outcomes. The run detail page polls while a run is queued or running. Each agent invocation receives JSON containing `taskId`, `category`, `prompt`, and `input`; it must return a non-empty JSON string field named `output` (or `text` / `answer`).
+
+The report measures these areas:
+
+- **Task success:** deterministic, suite-authored checks; functional and security checks are reported separately.
+- **Quality and safety:** a Groq LLM judge scores each response from 0 to 5 against the task rubric and reference answer, then reports 0–100 averages. Set `GROQ_API_KEY` (reused from Briefly) and optionally `BENCHMARK_JUDGE_MODEL`; judging is skipped when the key is absent. LLM scoring is a useful review signal, not ground truth. Judge coverage is shown, and the composite overall score is used only when every attempt was judged.
+- **Reliability:** successful HTTP and valid JSON responses, with error and timeout rates shown separately. Retries are explicit repetitions, not hidden retries.
+- **Latency:** mean, median, and nearest-rank p95 over attempts, including failed requests.
+- **Efficiency and cost:** agents may include `usage` or `usage_metadata` with `input_tokens` / `output_tokens` (or `prompt_tokens` / `completion_tokens`). Configure each agent's input and output USD per million tokens to calculate estimated agent cost; cost stays unavailable when usage or pricing is incomplete. Judge tokens are tracked separately and excluded from agent cost.
+
+The composite overall score is an equal-weight average of all deterministic task-check success, judged quality, judged safety, and request reliability. Functional and security checks are also reported separately. Findings include deterministic security failures and low judge safety scores and should be reviewed by a person. When `captureEvidence` is false, response text and raw response JSON are not retained; aggregate measurements and judge feedback are still stored.
+
+Agent endpoints must resolve to public IP addresses and use HTTPS. For local development, set `BIFROST_ALLOW_HTTP_ENDPOINTS=true` to permit HTTP and `BIFROST_ALLOW_PRIVATE_ENDPOINTS=true` to permit private addresses. These switches should only be enabled in a trusted local environment. Endpoints are revalidated when called and redirects are not followed.
+
+Responses can be plain JSON or wrapped in `{ "data": ... }`. The Angular proxy forwards `/benchmark-api` to FastAPI on port 8000.
 
 ## Troubleshooting
 

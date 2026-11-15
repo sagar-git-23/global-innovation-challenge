@@ -30,11 +30,13 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 from tavily import TavilyClient
 from dotenv import load_dotenv
+from benchmarking import initialize_benchmark_database, router as benchmark_router
 
 APP_DIR = Path(__file__).parent
 load_dotenv(APP_DIR / ".env")
 app = FastAPI(title="Meeting Intelligence API", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=[os.getenv("FRONTEND_ORIGIN", "http://localhost:4200")], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.include_router(benchmark_router)
 
 
 class SubjectType(str, Enum):
@@ -158,6 +160,7 @@ def initialize_database() -> None:
         conn.execute("ALTER TABLE uploaded_documents ADD COLUMN IF NOT EXISTS object_key TEXT")
         conn.execute("CREATE TABLE IF NOT EXISTS document_chunks (id TEXT PRIMARY KEY, document_id TEXT NOT NULL REFERENCES uploaded_documents(id) ON DELETE CASCADE, page_number INTEGER, chunk_text TEXT NOT NULL, embedding VECTOR(384) NOT NULL, created TIMESTAMPTZ NOT NULL)")
         conn.execute("CREATE INDEX IF NOT EXISTS document_chunks_document_id_idx ON document_chunks(document_id)")
+    initialize_benchmark_database()
 
 
 def update(brief_id: str, **values: Any) -> None:
