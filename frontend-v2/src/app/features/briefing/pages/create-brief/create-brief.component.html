@@ -1,0 +1,100 @@
+<div class="page">
+  <form [formGroup]="form" (ngSubmit)="submit()" class="grid" style="grid-template-columns:minmax(0,1.5fr) minmax(280px,.9fr);align-items:start">
+    <section class="card stack">
+      <div><span class="eyebrow">Meeting details</span><h3>Who are you meeting?</h3></div>
+      <div class="grid cols-2">
+        <div class="field">
+          <label for="subjectType">Subject type *</label>
+          <select id="subjectType" formControlName="subjectType">
+            <option value="COMPANY">Company</option>
+            <option value="PERSON">Person</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="subjectName">Name *</label>
+          <input id="subjectName" type="text" formControlName="subjectName" placeholder="Example: Contoso Technologies" />
+          @if (form.controls.subjectName.touched && form.controls.subjectName.invalid) { <span class="err">Enter 2–160 characters.</span> }
+        </div>
+        <div class="field">
+          <label for="meetingTime">Meeting time *</label>
+          <input id="meetingTime" type="datetime-local" formControlName="meetingTime" />
+        </div>
+        <div class="field">
+          <label for="lookback">Look-back window (days, 7–90) *</label>
+          <input id="lookback" type="number" formControlName="lookbackDays" />
+          @if (form.controls.lookbackDays.invalid) { <span class="err">Enter a value between 7 and 90.</span> }
+        </div>
+        <div class="field span-2">
+          <label for="purpose">Meeting purpose *</label>
+          <textarea id="purpose" rows="3" formControlName="meetingPurpose" placeholder="Example: Strategic partnership discussion"></textarea>
+          @if (form.controls.meetingPurpose.touched && form.controls.meetingPurpose.invalid) { <span class="err">Describe the purpose in at least 3 characters.</span> }
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-sm" style="align-self:flex-start" (click)="showAdvanced.set(!showAdvanced())">
+        {{ showAdvanced() ? 'Hide' : 'Show' }} search options
+      </button>
+
+      @if (showAdvanced()) {
+        <div class="grid cols-2">
+          <div class="field">
+            <label for="region">Region</label>
+            <input id="region" type="text" formControlName="region" />
+          </div>
+          <div class="field">
+            <label for="country">Country code (2 letters, optional)</label>
+            <input id="country" type="text" maxlength="2" formControlName="country" placeholder="IN" />
+            @if (form.controls.country.invalid) { <span class="err">Use a two-letter code such as IN or US.</span> }
+          </div>
+          <div class="field">
+            <label for="language">Language</label>
+            <input id="language" type="text" formControlName="language" />
+          </div>
+          <div class="field">
+            <label for="depth">Search depth</label>
+            <select id="depth" formControlName="searchDepth">
+              @for (d of depths; track d) { <option [value]="d">{{ d }}</option> }
+            </select>
+          </div>
+          <div class="field">
+            <label for="inc">Only these domains</label>
+            <textarea id="inc" rows="2" formControlName="includeDomains" placeholder="example.com, newsroom.example.com"></textarea>
+          </div>
+          <div class="field">
+            <label for="exc">Exclude domains</label>
+            <textarea id="exc" rows="2" formControlName="excludeDomains" placeholder="spam.example.com"></textarea>
+          </div>
+          <label class="check span-2"><input type="checkbox" formControlName="includeImages" /> Include related images</label>
+        </div>
+      }
+
+      @if (error()) { <div class="alert bad">{{ error() }}</div> }
+      <div class="row">
+        <button class="btn btn-primary" type="submit" [disabled]="submitting()">{{ submitting() ? 'Starting research…' : 'Generate brief' }}</button>
+      </div>
+    </section>
+
+    <aside class="card stack">
+      <div><span class="eyebrow">Optional</span><h3>Meeting documents</h3>
+        <p class="muted small">Selected documents are searched for context and cited in the brief. PDF, DOCX or TXT, up to 10 MB.</p></div>
+
+      <label class="btn" style="cursor:pointer">
+        {{ uploading() ? 'Uploading…' : '+ Upload document' }}
+        <input type="file" accept=".pdf,.docx,.txt" hidden [disabled]="uploading()" (change)="onFile($event)" />
+      </label>
+      @if (docError()) { <div class="alert bad">{{ docError() }}</div> }
+
+      @for (d of documents(); track d.documentId) {
+        <div class="row spread" style="padding:8px 0;border-top:1px solid var(--line)">
+          <label class="check" style="min-width:0">
+            <input type="checkbox" [checked]="selectedDocs().has(d.documentId)" (change)="toggleDoc(d.documentId)" />
+            <span style="overflow:hidden;text-overflow:ellipsis"><strong class="small">{{ d.filename }}</strong><br /><span class="muted small">{{ d.chunkCount }} passages</span></span>
+          </label>
+          <button type="button" class="btn btn-sm btn-danger" (click)="removeDoc(d.documentId)">Delete</button>
+        </div>
+      } @empty {
+        <p class="muted small">No documents uploaded yet.</p>
+      }
+    </aside>
+  </form>
+</div>

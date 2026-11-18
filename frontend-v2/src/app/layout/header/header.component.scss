@@ -1,0 +1,9 @@
+.top { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 28px; background: #fff; border-bottom: 1px solid var(--line); }
+h1 { margin: 4px 0 0; font-size: 26px; letter-spacing: -.02em; }
+p { margin-top: 4px; color: var(--muted); }
+.actions { display: flex; gap: 10px; }
+@media (max-width: 720px) {
+  .top { flex-direction: column; align-items: flex-start; padding: 16px; }
+  .actions { width: 100%; }
+  .actions .btn { flex: 1; }
+}

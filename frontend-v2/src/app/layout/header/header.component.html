@@ -1,0 +1,11 @@
+<header class="top">
+  <div>
+    <span class="eyebrow">Unified AI operations</span>
+    <h1>{{ title() }}</h1>
+    @if (subtitle()) { <p>{{ subtitle() }}</p> }
+  </div>
+  <div class="actions">
+    <a class="btn" routerLink="/benchmark/agents">View agents</a>
+    <a class="btn btn-primary" routerLink="/benchmark/runs/new">Start benchmark</a>
+  </div>
+</header>

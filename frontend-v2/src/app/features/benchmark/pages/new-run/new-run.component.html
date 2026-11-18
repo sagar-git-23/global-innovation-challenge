@@ -1,0 +1,81 @@
+<div class="page">
+  @if (loading()) {
+    <div class="card state"><div class="spinner"></div><p>Loading agents and task suites…</p></div>
+  } @else if (loadError()) {
+    <div class="card state"><strong>Could not load benchmark options</strong><p>{{ loadError() }}</p></div>
+  } @else if (created(); as c) {
+    <div class="card stack">
+      <span class="eyebrow">Benchmark queued</span>
+      <h2>{{ c.runs.length }} run{{ c.runs.length === 1 ? '' : 's' }} started</h2>
+      <p class="muted">Each agent is evaluated as its own run. Open a run to watch progress.</p>
+      @for (r of c.runs; track r.id) {
+        <div class="row spread" style="padding:10px 0;border-top:1px solid var(--line)">
+          <strong>{{ agentName(r.agentId) }}</strong>
+          <a class="btn btn-sm btn-primary" [routerLink]="['/benchmark/runs', r.id]">View run</a>
+        </div>
+      }
+      <div class="row"><a class="btn" routerLink="/benchmark/leaderboard">Open leaderboard</a></div>
+    </div>
+  } @else {
+    <div class="grid" style="grid-template-columns:minmax(0,1.6fr) minmax(280px,.8fr);align-items:start">
+      <div class="stack" style="gap:20px">
+        <section class="card">
+          <div class="section-head"><div><span class="eyebrow">Step 1</span><h3>Select agents</h3></div>
+            <span class="muted small">{{ selected().size }} selected</span></div>
+          @if (agents().length === 0) {
+            <div class="alert">No agents registered yet. <a routerLink="/benchmark/agents">Register one first.</a></div>
+          }
+          <div class="stack" style="gap:8px">
+            @for (a of agents(); track a.id) {
+              <label class="check card" style="padding:12px 14px;box-shadow:none" [style.border-color]="selected().has(a.id) ? 'var(--brand)' : null">
+                <input type="checkbox" [checked]="selected().has(a.id)" (change)="toggle(a.id)" />
+                <span><strong>{{ a.name }}</strong><br /><span class="muted small">{{ a.framework }} · v{{ a.version }}</span></span>
+              </label>
+            }
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-head"><div><span class="eyebrow">Step 2</span><h3>Choose a task suite</h3></div></div>
+          <div class="stack" style="gap:8px">
+            @for (s of suites(); track s.id) {
+              <label class="check card" style="padding:12px 14px;box-shadow:none;align-items:flex-start" [style.border-color]="suiteId() === s.id ? 'var(--brand)' : null">
+                <input type="radio" name="suite" [checked]="suiteId() === s.id" (change)="suiteId.set(s.id)" />
+                <span>
+                  <strong>{{ s.name }}</strong> <span class="muted small">v{{ s.version }}</span><br />
+                  <span class="muted small">{{ s.description }}</span><br />
+                  <span class="small">{{ s.totalTasks }} tasks · {{ s.functionalTaskCount }} functional · {{ s.securityTaskCount }} security · ~{{ s.estimatedDurationMinutes }} min</span>
+                </span>
+              </label>
+            }
+          </div>
+        </section>
+      </div>
+
+      <aside class="card stack">
+        <span class="eyebrow">Step 3</span>
+        <h3>Run settings</h3>
+        <div class="field">
+          <label for="runs">Runs per task (1–10)</label>
+          <input id="runs" type="number" min="1" max="10" [value]="runsPerTask()" (change)="setNumber('runs', $event)" />
+        </div>
+        <div class="field">
+          <label for="timeout">Timeout per call (5–600 s)</label>
+          <input id="timeout" type="number" min="5" max="600" [value]="timeoutSeconds()" (change)="setNumber('timeout', $event)" />
+        </div>
+        <label class="check">
+          <input type="checkbox" [checked]="captureEvidence()" (change)="captureEvidence.set($any($event.target).checked)" />
+          <span>Capture responses as evidence</span>
+        </label>
+        <div class="alert">
+          {{ selected().size }} agent{{ selected().size === 1 ? '' : 's' }} ×
+          {{ suite()?.totalTasks ?? 0 }} tasks × {{ runsPerTask() }} = <strong>{{ totalAttempts() }}</strong> agent calls
+        </div>
+        @if (startError()) { <div class="alert bad">{{ startError() }}</div> }
+        <button class="btn btn-primary" type="button" [disabled]="!canStart()" (click)="start()">
+          {{ starting() ? 'Starting…' : 'Start benchmark' }}
+        </button>
+      </aside>
+    </div>
+  }
+</div>

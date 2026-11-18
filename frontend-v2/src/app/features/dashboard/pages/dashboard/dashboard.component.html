@@ -1,0 +1,62 @@
+<div class="page">
+  @if (offline()) {
+    <div class="alert bad">The backend could not be reached. Start FastAPI and check the dev proxy target in proxy.conf.json.</div>
+  }
+
+  <section class="grid cols-4">
+    @for (m of metrics(); track m.label) {
+      <div class="kpi"><span>{{ m.label }}</span><strong>{{ loading() ? '…' : m.value }}</strong><small>{{ m.detail }}</small></div>
+    }
+  </section>
+
+  <section class="grid" style="grid-template-columns:minmax(0,1.6fr) minmax(260px,.8fr);align-items:start">
+    <div class="card">
+      <div class="section-head"><div><span class="eyebrow">Benchmarking</span><h3>Recent runs</h3></div>
+        <a class="btn btn-sm" routerLink="/benchmark/leaderboard">Leaderboard</a></div>
+      @if (runs().length === 0) {
+        <p class="muted">{{ loading() ? 'Loading…' : 'No benchmark runs yet.' }}</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Agent</th><th>Suite</th><th>Status</th><th>Score</th><th>Latency</th><th>Started</th></tr></thead>
+            <tbody>
+              @for (r of runs().slice(0, 6); track r.id) {
+                <tr>
+                  <td><a [routerLink]="['/benchmark/runs', r.id]"><strong>{{ r.agentName }}</strong></a></td>
+                  <td class="muted small">{{ r.suiteName }}</td>
+                  <td><span [class]="'badge ' + (r.status | statusTone)">{{ r.status }}</span></td>
+                  <td><span [class]="'score ' + (r.overallScore | tone)">{{ r.overallScore }}</span></td>
+                  <td>{{ r.averageLatencyMs | ms }}</td>
+                  <td class="muted small">{{ r.createdAt | date: 'short' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+    <aside class="card stack" style="background:#1d1a3d;border-color:#1d1a3d;color:#eceaff">
+      <span class="eyebrow" style="color:#b9b1ff">Authorized testing only</span>
+      <h3>Review security findings</h3>
+      <p style="color:#c9c4f5" class="small">Inspect failed security checks, captured evidence and rule outcomes for every agent you test.</p>
+      <a class="btn" style="background:#fff;color:#1d1a3d" routerLink="/benchmark/findings">Open findings</a>
+    </aside>
+  </section>
+
+  <section class="card">
+    <div class="section-head"><div><span class="eyebrow">Meeting intelligence</span><h3>Recent briefs</h3></div>
+      <a class="btn btn-sm" routerLink="/briefing/create">Generate brief</a></div>
+    @if (briefs().length === 0) {
+      <p class="muted">{{ loading() ? 'Loading…' : 'No briefs generated yet.' }}</p>
+    } @else {
+      @for (b of briefs().slice(0, 5); track b.briefId) {
+        <div class="row spread" style="padding:10px 0;border-top:1px solid var(--line)">
+          <div><a [routerLink]="['/briefing', b.briefId]"><strong>{{ b.subjectName }}</strong></a>
+            <div class="muted small">{{ b.sourceCount }} sources</div></div>
+          <span [class]="'badge ' + (b.status | statusTone)">{{ b.status }}</span>
+        </div>
+      }
+    }
+  </section>
+</div>

@@ -1,0 +1,55 @@
+<div class="page">
+  @if (loading()) {
+    <div class="card state"><div class="spinner"></div><p>Loading leaderboard…</p></div>
+  } @else if (error()) {
+    <div class="card state"><strong>Leaderboard unavailable</strong><p>{{ error() }}</p></div>
+  } @else if (entries().length === 0) {
+    <div class="card state"><strong>No completed benchmarks yet</strong><p>Run a benchmark to populate the leaderboard.</p>
+      <a class="btn btn-primary" routerLink="/benchmark/runs/new">Start benchmark</a></div>
+  } @else {
+    <div class="card row spread wrap">
+      <div class="chips">
+        @for (s of suites(); track s.key) {
+          <button type="button" class="chip" [class.active]="activeKey() === s.key" (click)="suiteKey.set(s.key)">{{ s.label }}</button>
+        }
+      </div>
+      <div class="row">
+        <label class="label" for="sort">Sort by</label>
+        <select id="sort" class="input" style="width:auto" [value]="sortKey()" (change)="sortKey.set($any($event.target).value)">
+          @for (o of sortOptions; track o.value) { <option [value]="o.value">{{ o.label }}</option> }
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Agent</th><th>Overall</th><th>Functional</th><th>Security</th><th>Quality</th><th>Safety</th>
+              <th>Reliability</th><th>Avg latency</th><th>P95</th><th>Cost</th><th>Attempts</th><th></th></tr>
+          </thead>
+          <tbody>
+            @for (e of rows(); track e.id; let i = $index) {
+              <tr>
+                <td><strong>{{ i + 1 }}</strong></td>
+                <td><strong>{{ e.agentName }}</strong><br /><span class="muted small">{{ e.framework }} · v{{ e.agentVersion }}</span></td>
+                <td><span [class]="'score ' + (e.overallScore | tone)">{{ e.overallScore }}</span></td>
+                <td><span [class]="'score ' + (e.functionalScore | tone)">{{ e.functionalScore }}%</span></td>
+                <td><span [class]="'score ' + (e.securityScore | tone)">{{ e.securityScore }}%</span></td>
+                <td>{{ e.qualityScore | dash }}</td>
+                <td>{{ e.safetyScore | dash }}</td>
+                <td><span [class]="'score ' + (e.requestSuccessRate | tone)">{{ e.requestSuccessRate }}%</span></td>
+                <td>{{ e.averageLatencyMs | ms }}</td>
+                <td>{{ e.p95LatencyMs | ms }}</td>
+                <td>{{ e.costUsd | usd }}</td>
+                <td>{{ e.attemptsCompleted }}</td>
+                <td><a class="btn btn-sm" [routerLink]="['/benchmark/runs', e.id]">Details</a></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="muted small" style="margin-top:12px">Each row is the latest completed run for that agent and suite version, so unlike suites are never mixed.</p>
+    </div>
+  }
+</div>

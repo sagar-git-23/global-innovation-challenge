@@ -1,0 +1,33 @@
+<aside class="sidebar">
+  <a class="brand" routerLink="/dashboard">
+    <span class="mark">AI</span>
+    <span class="brand-text"><strong>AI Assurance</strong><small>Evaluation Portal</small></span>
+  </a>
+
+  <nav>
+    @for (group of groups; track group.title) {
+      <p class="group">{{ group.title }}</p>
+      @for (item of group.items; track item.route) {
+        <a class="item" [routerLink]="item.route" routerLinkActive="active"
+           [routerLinkActiveOptions]="{ exact: item.exact ?? false }">
+          <span class="icon">{{ item.icon }}</span>
+          <span class="label">{{ item.label }}</span>
+        </a>
+      }
+    }
+  </nav>
+
+  <div class="health">
+    <p class="group">Backend health</p>
+    @if (offline()) {
+      <div class="hrow"><span>API</span><b class="pill bad">Offline</b></div>
+    } @else if (status(); as s) {
+      <div class="hrow"><span>API</span><b class="pill good">Online</b></div>
+      <div class="hrow"><span>Database</span><b class="pill" [class.good]="s.neonConfigured" [class.bad]="!s.neonConfigured">{{ s.neonConfigured ? 'Connected' : 'Error' }}</b></div>
+      <div class="hrow"><span>Tavily</span><b class="pill" [class.good]="s.tavilyConfigured" [class.bad]="!s.tavilyConfigured">{{ s.tavilyConfigured ? 'Configured' : 'Missing' }}</b></div>
+      <div class="hrow"><span>Groq</span><b class="pill" [class.good]="s.groqConfigured" [class.bad]="!s.groqConfigured">{{ s.groqConfigured ? 'Configured' : 'Missing' }}</b></div>
+    } @else {
+      <div class="hrow"><span>API</span><b class="pill">Checking</b></div>
+    }
+  </div>
+</aside>

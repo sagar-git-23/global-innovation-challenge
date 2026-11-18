@@ -1,0 +1,122 @@
+<div class="page">
+  @if (notice()) { <div class="toast alert good">{{ notice() }}</div> }
+
+  <div class="section-head">
+    <div>
+      <span class="eyebrow">Universal agent adapters</span>
+      <h2>Registered agents</h2>
+      <p>Register any agent endpoint that accepts the common benchmark payload and returns an output.</p>
+    </div>
+    <button class="btn btn-primary" type="button" (click)="openForm()">+ Register agent</button>
+  </div>
+
+  <div class="card row spread wrap">
+    <input class="input" style="max-width:520px" type="search" placeholder="Search by name, type, framework or endpoint"
+           [value]="search()" (input)="search.set($any($event.target).value)" />
+    <span class="muted small">{{ filtered().length }} agent{{ filtered().length === 1 ? '' : 's' }}</span>
+  </div>
+
+  @if (loading()) {
+    <div class="card state"><div class="spinner"></div><p>Loading registered agents…</p></div>
+  } @else if (loadError()) {
+    <div class="card state">
+      <strong>Agent registry unavailable</strong>
+      <p>{{ loadError() }}</p>
+      <button class="btn" type="button" (click)="fetch()">Retry</button>
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="card state"><strong>No agents found</strong><p>Change the search or register a new agent endpoint.</p></div>
+  } @else {
+    <div class="grid cols-3">
+      @for (a of filtered(); track a.id) {
+        <article class="card stack">
+          <div class="row spread">
+            <h3>{{ a.name }}</h3>
+            <span [class]="'badge ' + (a.status | statusTone)">{{ a.status }}</span>
+          </div>
+          <div class="small" style="color:var(--brand);font-weight:600">{{ a.framework }} · v{{ a.version }} · {{ a.type }}</div>
+          <p class="muted small">{{ a.description || 'No description supplied.' }}</p>
+          <dl class="small stack" style="margin:0;gap:6px">
+            <div class="row spread"><dt class="muted">Timeout</dt><dd style="margin:0">{{ a.timeoutSeconds }} s</dd></div>
+            <div class="row spread"><dt class="muted">Input cost / 1M tokens</dt><dd style="margin:0">{{ a.inputCostPer1M ?? '—' }}</dd></div>
+            <div class="row spread"><dt class="muted">Output cost / 1M tokens</dt><dd style="margin:0">{{ a.outputCostPer1M ?? '—' }}</dd></div>
+            <div class="row spread"><dt class="muted">Registered</dt><dd style="margin:0">{{ a.createdAt | date: 'mediumDate' }}</dd></div>
+            <div><dt class="muted">Endpoint</dt><dd class="mono" style="margin:2px 0 0;word-break:break-all">{{ a.endpoint }}</dd></div>
+          </dl>
+          <a class="btn btn-primary" style="margin-top:auto" routerLink="/benchmark/runs/new" [queryParams]="{ agentId: a.id }">Run benchmark</a>
+        </article>
+      }
+    </div>
+  }
+
+  @if (showForm()) {
+    <div class="backdrop" (click)="closeForm()">
+      <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="reg-title" (click)="$event.stopPropagation()">
+        <div class="row spread" style="align-items:flex-start;margin-bottom:16px">
+          <div>
+            <span class="eyebrow">Agent adapter</span>
+            <h2 id="reg-title">Register an agent</h2>
+            <p class="muted small">The backend invokes this endpoint with taskId, category, prompt and input.</p>
+          </div>
+          <button class="btn btn-sm" type="button" aria-label="Close" (click)="closeForm()">✕</button>
+        </div>
+
+        <form [formGroup]="form" (ngSubmit)="register()">
+          <div class="grid cols-2">
+            <div class="field span-2">
+              <label for="name">Agent name *</label>
+              <input id="name" type="text" formControlName="name" placeholder="Example: SupportGuard" />
+              @if (form.controls.name.touched && form.controls.name.invalid) { <span class="err">Enter 2–100 characters.</span> }
+            </div>
+            <div class="field">
+              <label for="type">Agent type</label>
+              <select id="type" formControlName="type">
+                @for (t of types; track t.value) { <option [value]="t.value">{{ t.label }}</option> }
+              </select>
+            </div>
+            <div class="field">
+              <label for="framework">Framework *</label>
+              <select id="framework" formControlName="framework">
+                @for (f of frameworks; track f) { <option [value]="f">{{ f }}</option> }
+              </select>
+            </div>
+            <div class="field">
+              <label for="version">Version *</label>
+              <input id="version" type="text" formControlName="version" />
+            </div>
+            <div class="field">
+              <label for="timeout">Timeout (seconds, 5–600) *</label>
+              <input id="timeout" type="number" formControlName="timeoutSeconds" />
+              @if (form.controls.timeoutSeconds.invalid) { <span class="err">Enter a value between 5 and 600.</span> }
+            </div>
+            <div class="field span-2">
+              <label for="endpoint">Invocation endpoint *</label>
+              <input id="endpoint" type="url" formControlName="endpoint" placeholder="https://my-agent.example.com/api/invoke" />
+              <span class="hint">The backend requires HTTPS and a public address unless local-development flags are enabled on the server.</span>
+              @if (form.controls.endpoint.touched && form.controls.endpoint.invalid) { <span class="err">Enter a complete HTTP or HTTPS URL.</span> }
+            </div>
+            <div class="field">
+              <label for="in-cost">Input cost per 1M tokens (USD)</label>
+              <input id="in-cost" type="number" step="any" formControlName="inputCostPer1M" placeholder="Optional" />
+            </div>
+            <div class="field">
+              <label for="out-cost">Output cost per 1M tokens (USD)</label>
+              <input id="out-cost" type="number" step="any" formControlName="outputCostPer1M" placeholder="Optional" />
+            </div>
+            <div class="field span-2">
+              <label for="desc">Description</label>
+              <textarea id="desc" rows="3" formControlName="description" placeholder="Supported actions and intended use."></textarea>
+            </div>
+          </div>
+
+          @if (formError()) { <div class="alert bad" style="margin-top:14px">{{ formError() }}</div> }
+
+          <div class="row" style="justify-content:flex-end;margin-top:18px">
+            <button class="btn" type="button" [disabled]="saving()" (click)="closeForm()">Cancel</button>
+            <button class="btn btn-primary" type="submit" [disabled]="saving()">{{ saving() ? 'Registering…' : 'Register agent' }}</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
+</div>

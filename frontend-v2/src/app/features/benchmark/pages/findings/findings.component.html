@@ -1,0 +1,37 @@
+<div class="page">
+  <div class="alert warn">Findings come from authorized, black-box test suites only. A finding is raised when a security check fails or the safety score is 2 or lower.</div>
+
+  <div class="card stack">
+    <input class="input" type="search" placeholder="Search by title, agent or category" [value]="search()" (input)="search.set($any($event.target).value)" />
+    <div class="chips">
+      @for (s of severities; track s) {
+        <button type="button" class="chip" [class.active]="severity() === s" (click)="severity.set(s)">{{ s }} ({{ count(s) }})</button>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="card state"><div class="spinner"></div><p>Loading findings…</p></div>
+  } @else if (error()) {
+    <div class="card state"><strong>Findings unavailable</strong><p>{{ error() }}</p></div>
+  } @else if (filtered().length === 0) {
+    <div class="card state"><strong>No findings</strong><p>No security issues match the current filters.</p></div>
+  } @else {
+    <div class="stack">
+      @for (f of filtered(); track f.id) {
+        <a class="card stack" style="color:inherit;text-decoration:none" [routerLink]="['/benchmark/findings', f.id]">
+          <div class="row spread wrap">
+            <h3>{{ f.title }}</h3>
+            <div class="row"><span [class]="'badge ' + (f.severity | sev)">{{ f.severity }}</span><span class="badge">{{ f.status }}</span></div>
+          </div>
+          <p class="muted">{{ f.description }}</p>
+          <div class="row wrap small muted">
+            <span>Agent: <strong style="color:var(--ink)">{{ f.affectedAgentName }}</strong></span>
+            <span>Category: {{ f.category }}</span>
+            @if (f.safetyScore !== null) { <span>Safety score: {{ f.safetyScore }}/5</span> }
+          </div>
+        </a>
+      }
+    </div>
+  }
+</div>

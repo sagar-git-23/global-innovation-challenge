@@ -1,0 +1,31 @@
+<div class="page">
+  @if (loading()) {
+    <div class="card state"><div class="spinner"></div><p>Loading brief history…</p></div>
+  } @else if (error()) {
+    <div class="card state"><strong>History unavailable</strong><p>{{ error() }}</p></div>
+  } @else if (briefs().length === 0) {
+    <div class="card state"><strong>No briefs yet</strong><p>Generate your first meeting brief.</p>
+      <a class="btn btn-primary" routerLink="/briefing/create">Generate brief</a></div>
+  } @else {
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Subject</th><th>Type</th><th>Meeting</th><th>Status</th><th>Updated</th><th>Sources</th><th></th></tr></thead>
+          <tbody>
+            @for (b of briefs(); track b.briefId) {
+              <tr>
+                <td><strong>{{ b.subjectName }}</strong></td>
+                <td>{{ b.subjectType ?? '—' }}</td>
+                <td>{{ b.meetingTime ? (b.meetingTime | date: 'medium') : '—' }}</td>
+                <td><span [class]="'badge ' + (b.status | statusTone)">{{ b.status }}</span></td>
+                <td>{{ b.generatedAt ? (b.generatedAt | date: 'medium') : '—' }}</td>
+                <td>{{ b.sourceCount }}</td>
+                <td><a class="btn btn-sm" [routerLink]="['/briefing', b.briefId]">Open</a></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,48 @@
+<div class="page">
+  <a routerLink="/benchmark/findings">← All findings</a>
+
+  @if (error()) {
+    <div class="card state"><strong>Finding unavailable</strong><p>{{ error() }}</p></div>
+  } @else if (finding(); as f) {
+    <div class="card stack">
+      <div class="row spread wrap">
+        <h2>{{ f.title }}</h2>
+        <div class="row"><span [class]="'badge ' + (f.severity | sev)">{{ f.severity }}</span><span class="badge">{{ f.status }}</span></div>
+      </div>
+      <p>{{ f.description }}</p>
+      <div class="grid cols-4">
+        <div class="kpi"><span>Affected agent</span><strong style="font-size:18px">{{ f.affectedAgentName }}</strong></div>
+        <div class="kpi"><span>Category</span><strong style="font-size:18px">{{ f.category }}</strong></div>
+        <div class="kpi"><span>Safety score</span><strong style="font-size:18px">{{ f.safetyScore === null ? '—' : f.safetyScore + ' / 5' }}</strong></div>
+        <div class="kpi"><span>Benchmark run</span><a style="display:block;margin-top:10px" [routerLink]="['/benchmark/runs', f.runId]">Open run →</a></div>
+      </div>
+    </div>
+
+    <div class="grid cols-2" style="align-items:start">
+      <section class="card stack">
+        <h3>Captured evidence</h3>
+        <pre class="code">{{ f.evidence || 'No evidence was captured. Enable "Capture responses as evidence" when starting a benchmark.' }}</pre>
+      </section>
+
+      <section class="card stack">
+        <h3>Rule outcomes</h3>
+        @if (f.checks?.rules?.length) {
+          @for (c of f.checks!.rules; track c.rule) {
+            <div class="row spread" style="padding:8px 0;border-bottom:1px solid var(--line)">
+              <span class="mono">{{ c.rule }}</span>
+              <span class="badge" [class.good]="c.passed" [class.bad]="!c.passed">{{ c.passed ? 'PASS' : 'FAIL' }}</span>
+            </div>
+          }
+        } @else {
+          <p class="muted">No deterministic rule outcomes were recorded.</p>
+        }
+        <h3 style="margin-top:12px">Suggested review steps</h3>
+        <ul style="margin:0;padding-left:18px" class="muted">
+          @for (s of reviewSteps; track s) { <li>{{ s }}</li> }
+        </ul>
+      </section>
+    </div>
+  } @else {
+    <div class="card state"><div class="spinner"></div><p>Loading finding…</p></div>
+  }
+</div>

@@ -1,0 +1,87 @@
+<div class="page">
+  @if (error()) {
+    <div class="card state"><strong>Brief unavailable</strong><p>{{ error() }}</p><a class="btn" routerLink="/briefing/history">Back to history</a></div>
+  } @else if (brief(); as b) {
+    <div class="card row spread wrap">
+      <div>
+        <span class="eyebrow">{{ b.subject.type }} · meeting brief</span>
+        <h2>{{ b.subject.name }}</h2>
+        <p class="muted">{{ b.meetingPurpose }}</p>
+        <p class="muted small">Meeting {{ b.meetingTime | date: 'medium' }} · covers {{ b.coverage.from }} to {{ b.coverage.to }} · generated {{ b.generatedAt | date: 'medium' }}</p>
+      </div>
+      <div class="row no-print">
+        <button class="btn" type="button" (click)="print()">Print / save PDF</button>
+        <a class="btn" routerLink="/briefing/create">New brief</a>
+      </div>
+    </div>
+
+    @for (s of sections(); track s.title) {
+      <section class="card stack">
+        <h3>{{ s.title }}</h3>
+        @for (c of s.items; track c.id) {
+          <p>{{ c.text }}@for (id of c.citationIds; track id) {<button type="button" class="cite" (click)="jump(id)">{{ num(id) }}</button>}</p>
+        }
+      </section>
+    }
+
+    @if (b.openQuestions.length) {
+      <section class="card stack">
+        <h3>Open questions</h3>
+        @for (q of b.openQuestions; track q.id) {
+          <div class="stack" style="gap:4px;padding-bottom:12px;border-bottom:1px solid var(--line)">
+            <strong>{{ q.question }}</strong>
+            @if (q.answer) { <p>{{ q.answer }}@for (id of q.citationIds; track id) {<button type="button" class="cite" (click)="jump(id)">{{ num(id) }}</button>}</p> }
+            <p class="muted small">Why ask: {{ q.reason }}</p>
+          </div>
+        }
+      </section>
+    }
+
+    @if (b.images?.length) {
+      <section class="card stack">
+        <h3>Related images</h3>
+        <div class="grid cols-3">
+          @for (img of b.images; track img.url) {
+            <figure style="margin:0">
+              <img [src]="img.url" [alt]="img.title" style="width:100%;height:150px;object-fit:cover;border-radius:10px" loading="lazy" />
+              <figcaption class="muted small">{{ img.title }}</figcaption>
+            </figure>
+          }
+        </div>
+      </section>
+    }
+
+    <section class="card stack">
+      <h3>Sources ({{ b.sources.length }})</h3>
+      @for (s of b.sources; track s.id; let i = $index) {
+        <div [id]="'src-' + s.id" class="row" style="align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)">
+          <span class="badge info">{{ i + 1 }}</span>
+          <div style="min-width:0">
+            @if (isLink(s.url)) { <a [href]="s.url" target="_blank" rel="noopener noreferrer"><strong>{{ s.title }}</strong></a> }
+            @else { <strong>{{ s.title }}</strong> }
+            <div class="muted small">{{ s.publisher }}@if (s.publishedAt) { · {{ s.publishedAt | date: 'mediumDate' }} } · {{ s.sourceType === 'DOCUMENT' ? 'Uploaded document' : 'Web' }}</div>
+            @if (s.excerpt) { <p class="small muted" style="margin-top:4px">{{ s.excerpt }}</p> }
+          </div>
+        </div>
+      }
+    </section>
+
+    @if (b.research) {
+      <p class="muted small">Research: {{ b.research.agentFramework }} agent · {{ b.research.model }} · search depth {{ b.research.searchDepth }} · embeddings {{ b.research.embeddingModel }}</p>
+    }
+  } @else if (status(); as s) {
+    <div class="card stack" style="max-width:640px">
+      <div class="row spread"><h3>{{ s.status === 'FAILED' ? 'Brief generation failed' : 'Preparing your brief' }}</h3>
+        <span [class]="'badge ' + (s.status | statusTone)">{{ s.status }}</span></div>
+      @if (s.status === 'FAILED') {
+        <div class="alert bad">{{ s.errorMessage || 'Unknown error' }}</div>
+        <a class="btn" routerLink="/briefing/create">Try again</a>
+      } @else {
+        <div class="bar"><span [style.width.%]="s.progressPercentage"></span></div>
+        <p class="muted small">{{ s.currentStage }} · {{ s.progressPercentage }}%</p>
+      }
+    </div>
+  } @else {
+    <div class="card state"><div class="spinner"></div><p>Loading brief…</p></div>
+  }
+</div>

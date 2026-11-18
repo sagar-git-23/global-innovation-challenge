@@ -1,0 +1,89 @@
+<div class="page">
+  @if (error() && !run()) {
+    <div class="card state"><strong>Run unavailable</strong><p>{{ error() }}</p><a class="btn" routerLink="/benchmark/leaderboard">Back to leaderboard</a></div>
+  } @else if (run(); as r) {
+    <div class="card row spread wrap">
+      <div>
+        <span class="eyebrow">{{ r.suiteName }} · v{{ r.suiteVersion }}</span>
+        <h2>{{ r.agentName }} <span class="muted small">{{ r.framework }} · v{{ r.agentVersion }}</span></h2>
+        <p class="muted small mono">Run {{ r.id }} · started {{ r.createdAt | date: 'medium' }}</p>
+      </div>
+      <span [class]="'badge ' + (r.status | statusTone)">{{ r.status }}</span>
+    </div>
+
+    @if (r.status === 'QUEUED' || r.status === 'RUNNING') {
+      <div class="card stack">
+        <strong>{{ r.status === 'QUEUED' ? 'Waiting to start…' : 'Evaluating the agent…' }}</strong>
+        <div class="bar indeterminate"><span></span></div>
+        <span class="muted small">{{ r.attemptsCompleted }} task attempt{{ r.attemptsCompleted === 1 ? '' : 's' }} recorded so far. This page refreshes automatically.</span>
+      </div>
+    }
+    @if (r.status === 'FAILED') {
+      <div class="alert bad">Run failed: {{ r.error || 'Unknown error' }}</div>
+    }
+
+    <div class="grid cols-4">
+      <div class="kpi"><span>Overall score</span><strong [class]="'score ' + (r.overallScore | tone)">{{ r.overallScore }}</strong><small>{{ r.scoreMethod }}</small></div>
+      <div class="kpi"><span>Functional</span><strong [class]="'score ' + (r.functionalScore | tone)">{{ r.functionalScore }}%</strong><small>Task checks passed</small></div>
+      <div class="kpi"><span>Security</span><strong [class]="'score ' + (r.securityScore | tone)">{{ r.securityScore }}%</strong><small>Task checks passed</small></div>
+      <div class="kpi"><span>Reliability</span><strong [class]="'score ' + (r.requestSuccessRate | tone)">{{ r.requestSuccessRate }}%</strong><small>{{ r.errorRate }}% errors · {{ r.timeoutRate }}% timeouts</small></div>
+      <div class="kpi"><span>Quality (LLM judge)</span><strong>{{ r.qualityScore | dash }}</strong><small>Judge coverage {{ r.judgeCoveragePct }}%</small></div>
+      <div class="kpi"><span>Safety (LLM judge)</span><strong>{{ r.safetyScore | dash }}</strong><small>{{ r.judgeEnabled ? 'Judge enabled' : 'Judge disabled' }}</small></div>
+      <div class="kpi"><span>Latency (avg)</span><strong>{{ r.averageLatencyMs | ms }}</strong><small>Median {{ r.medianLatencyMs | ms }} · P95 {{ r.p95LatencyMs | ms }}</small></div>
+      <div class="kpi"><span>Cost</span><strong>{{ r.costUsd | usd }}</strong><small>Tokens {{ r.totalTokens | dash }} · pricing coverage {{ r.costCoveragePct }}%</small></div>
+    </div>
+
+    <section class="card">
+      <div class="section-head"><div><span class="eyebrow">Evidence</span><h3>Task results</h3></div><span class="muted small">{{ r.results.length }} attempts</span></div>
+      @if (r.results.length === 0) {
+        <p class="muted">No results recorded yet.</p>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Task</th><th>Category</th><th>Attempt</th><th>Result</th><th>Latency</th><th>Quality</th><th>Safety</th><th></th></tr></thead>
+            <tbody>
+              @for (t of r.results; track key(t.taskId, t.attempt)) {
+                <tr class="clickable" (click)="toggle(key(t.taskId, t.attempt))">
+                  <td class="mono">{{ t.taskId }}</td>
+                  <td><span class="badge" [class.warn]="t.category === 'SECURITY'" [class.info]="t.category !== 'SECURITY'">{{ t.category }}</span></td>
+                  <td>{{ t.attempt }}</td>
+                  <td>
+                    @if (!t.requestOk) { <span class="badge bad">{{ t.timedOut ? 'TIMEOUT' : 'ERROR' }}</span> }
+                    @else { <span class="badge" [class.good]="t.passed" [class.bad]="!t.passed">{{ t.passed ? 'PASS' : 'FAIL' }}</span> }
+                  </td>
+                  <td>{{ t.latencyMs | ms }}</td>
+                  <td>{{ t.qualityScore | dash: '/5' }}</td>
+                  <td>{{ t.safetyScore | dash: '/5' }}</td>
+                  <td class="muted">{{ expanded() === key(t.taskId, t.attempt) ? '▲' : '▼' }}</td>
+                </tr>
+                @if (expanded() === key(t.taskId, t.attempt)) {
+                  <tr>
+                    <td colspan="8" style="background:#faf9f6">
+                      <div class="stack">
+                        @if (t.error) { <div class="alert bad">{{ t.error }}</div> }
+                        <div><h4>Agent response</h4><pre class="code">{{ t.response || 'No response captured (evidence capture disabled or request failed).' }}</pre></div>
+                        @if (t.checks?.rules?.length) {
+                          <div class="row wrap">
+                            <h4>Checks</h4>
+                            @for (c of t.checks!.rules; track c.rule) {
+                              <span class="badge" [class.good]="c.passed" [class.bad]="!c.passed">{{ c.rule }}: {{ c.passed ? 'pass' : 'fail' }}</span>
+                            }
+                          </div>
+                        }
+                        @if (t.judgeFeedback) { <div><h4>Judge feedback</h4><p>{{ t.judgeFeedback }}</p></div> }
+                        @if (t.judgeError) { <div class="alert warn">{{ t.judgeError }}</div> }
+                        <p class="muted small">Tokens in/out: {{ t.inputTokens | dash }} / {{ t.outputTokens | dash }} · cost {{ t.costUsd | usd }}</p>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  } @else {
+    <div class="card state"><div class="spinner"></div><p>Loading run…</p></div>
+  }
+</div>
