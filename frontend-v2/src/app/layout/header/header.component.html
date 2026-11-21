@@ -1,10 +1,14 @@
 <header class="top">
   <div>
-    <span class="eyebrow">Unified AI operations</span>
+    <span class="eyebrow">Meeting &amp; agent intelligence</span>
     <h1>{{ title() }}</h1>
     @if (subtitle()) { <p>{{ subtitle() }}</p> }
   </div>
   <div class="actions">
+    <button class="btn theme-toggle" type="button" (click)="toggleTheme()" [attr.aria-pressed]="isDark()" aria-label="Toggle dark theme">
+      <span aria-hidden="true">{{ isDark() ? '☀' : '☾' }}</span>
+      {{ isDark() ? 'Light mode' : 'Dark mode' }}
+    </button>
     <a class="btn" routerLink="/benchmark/agents">View agents</a>
     <a class="btn btn-primary" routerLink="/benchmark/runs/new">Start benchmark</a>
   </div>

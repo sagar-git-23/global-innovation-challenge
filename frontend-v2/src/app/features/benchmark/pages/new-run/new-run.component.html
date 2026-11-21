@@ -44,6 +44,7 @@
                 <span>
                   <strong>{{ s.name }}</strong> <span class="muted small">v{{ s.version }}</span><br />
                   <span class="muted small">{{ s.description }}</span><br />
+                  @if (s.usesTools) { <span class="badge info">Tool use · sandboxed checks</span><br /> }
                   <span class="small">{{ s.totalTasks }} tasks · {{ s.functionalTaskCount }} functional · {{ s.securityTaskCount }} security · ~{{ s.estimatedDurationMinutes }} min</span>
                 </span>
               </label>
@@ -67,6 +68,14 @@
           <input type="checkbox" [checked]="captureEvidence()" (change)="captureEvidence.set($any($event.target).checked)" />
           <span>Capture responses as evidence</span>
         </label>
+        @if (suite()?.usesTools) {
+          <div class="alert warn small">This suite gives agents access to a simulated support system. Tool calls are observed and checked for policy violations; no real customer actions are performed.</div>
+          <div class="stack"><strong class="small">Available tools</strong>
+            @for (tool of toolSpecs(); track tool.name) {
+              <div class="small"><span class="mono">{{ tool.name }}</span> <span class="muted">— {{ tool.description }}</span></div>
+            }
+          </div>
+        }
         <div class="alert">
           {{ selected().size }} agent{{ selected().size === 1 ? '' : 's' }} ×
           {{ suite()?.totalTasks ?? 0 }} tasks × {{ runsPerTask() }} = <strong>{{ totalAttempts() }}</strong> agent calls

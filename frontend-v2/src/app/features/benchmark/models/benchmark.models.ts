@@ -1,7 +1,8 @@
 // Field names mirror the FastAPI backend (benchmarking.py) exactly.
 
-export type RunStatus = 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+export type RunStatus = 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 export type FindingSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
+export type AgentAdapter = 'http' | 'openai-chat';
 
 export interface Agent {
   id: string;
@@ -14,6 +15,9 @@ export interface Agent {
   timeoutSeconds: number;
   inputCostPer1M: number | null;
   outputCostPer1M: number | null;
+  adapter: AgentAdapter;
+  model: string | null;
+  authEnvVar: string | null;
   status: string;
   createdAt: string;
 }
@@ -28,6 +32,9 @@ export interface CreateAgentRequest {
   timeoutSeconds: number;
   inputCostPer1M: number | null;
   outputCostPer1M: number | null;
+  adapter: AgentAdapter;
+  model: string | null;
+  authEnvVar: string | null;
 }
 
 export interface TaskSuite {
@@ -39,6 +46,13 @@ export interface TaskSuite {
   functionalTaskCount: number;
   securityTaskCount: number;
   estimatedDurationMinutes: number;
+  usesTools: boolean;
+}
+
+export interface ToolSpec {
+  name: string;
+  description: string;
+  parameters?: Record<string, unknown>;
 }
 
 export interface StartRunRequest {
@@ -91,6 +105,17 @@ export interface RunSummary {
   createdAt: string;
   completedAt: string | null;
   error: string | null;
+  totalAttempts: number;
+  progressPercentage: number;
+  passAllRate: number;
+  passAnyRate: number;
+  consistencyScore: number | null;
+  toolCallCount: number;
+  averageToolCalls: number | null;
+  averageSteps: number | null;
+  violationCount: number;
+  tasksWithViolations: number;
+  costPerSuccessUsd: number | null;
   rank?: number;
 }
 
@@ -116,6 +141,25 @@ export interface TaskResult {
   judgeFeedback: string | null;
   judgeError: string | null;
   judgeTokens: number;
+  toolCalls: ToolCall[];
+  violations: PolicyViolation[];
+  stepCount: number | null;
+  toolCallCount: number;
+}
+
+export interface ToolCall {
+  seq?: number;
+  tool: string;
+  arguments?: Record<string, unknown>;
+  result?: unknown;
+  source?: string;
+}
+
+export interface PolicyViolation {
+  code: string;
+  tool?: string;
+  detail: string;
+  seq?: number;
 }
 
 export interface RunDetails extends RunSummary {
@@ -138,4 +182,22 @@ export interface SecurityFinding {
   evidence: string;
   safetyScore: number | null;
   checks: { rules: CheckRule[] } | null;
+  taskId?: string;
+  attempt?: number;
+  attackObjective?: string | null;
+  impact?: string | null;
+  violations?: PolicyViolation[];
+  toolCalls?: ToolCall[];
+  remediation?: string[];
+  discoveredAt?: string;
+  attackPath?: { nodes: AttackPathNode[]; edges: { source: string; target: string }[] };
+}
+
+export interface AttackPathNode {
+  id: string;
+  label: string;
+  description: string;
+  type: string;
+  status: string;
+  sequence: number;
 }

@@ -66,9 +66,6 @@
       }
     </section>
 
-    @if (b.research) {
-      <p class="muted small">Research: {{ b.research.agentFramework }} agent · {{ b.research.model }} · search depth {{ b.research.searchDepth }} · embeddings {{ b.research.embeddingModel }}</p>
-    }
   } @else if (status(); as s) {
     <div class="card stack" style="max-width:640px">
       <div class="row spread"><h3>{{ s.status === 'FAILED' ? 'Brief generation failed' : 'Preparing your brief' }}</h3>

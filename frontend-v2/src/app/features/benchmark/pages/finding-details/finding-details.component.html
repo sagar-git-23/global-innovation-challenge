@@ -19,6 +19,28 @@
     </div>
 
     <div class="grid cols-2" style="align-items:start">
+      @if (f.attackPath; as path) {
+        <section class="card stack span-2">
+          <div><span class="eyebrow">Observed sequence</span><h3>Attack path</h3></div>
+          @for (node of path.nodes; track node.id) {
+            <div class="row" style="align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)">
+              <span class="badge" [class.bad]="node.type === 'IMPACT'" [class.info]="node.type !== 'IMPACT'">{{ node.sequence }} · {{ node.type }}</span>
+              <div><strong>{{ node.label }}</strong><p class="muted small">{{ node.description }}</p></div>
+            </div>
+          }
+          @if (f.attackObjective) { <p><strong>Attack objective:</strong> {{ f.attackObjective }}</p> }
+          @if (f.impact) { <p><strong>Potential impact:</strong> {{ f.impact }}</p> }
+        </section>
+      }
+      @if (f.violations?.length) {
+        <section class="card stack">
+          <h3>Policy violations</h3>
+          @for (v of f.violations!; track v.seq + ':' + v.code) {
+            <div class="alert bad"><strong>{{ v.code }}</strong>: {{ v.detail }}@if (v.tool) { <span> · {{ v.tool }}</span> }</div>
+          }
+          @if (f.toolCalls?.length) { <p class="muted small">Observed in {{ f.toolCalls!.length }} tool call(s).</p> }
+        </section>
+      }
       <section class="card stack">
         <h3>Captured evidence</h3>
         <pre class="code">{{ f.evidence || 'No evidence was captured. Enable "Capture responses as evidence" when starting a benchmark.' }}</pre>
@@ -35,6 +57,12 @@
           }
         } @else {
           <p class="muted">No deterministic rule outcomes were recorded.</p>
+        }
+        @if (f.remediation?.length) {
+          <h3 style="margin-top:12px">Suggested remediation</h3>
+          <ul style="margin:0;padding-left:18px" class="muted">
+            @for (step of f.remediation!; track step) { <li>{{ step }}</li> }
+          </ul>
         }
         <h3 style="margin-top:12px">Suggested review steps</h3>
         <ul style="margin:0;padding-left:18px" class="muted">

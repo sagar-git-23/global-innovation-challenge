@@ -1,5 +1,5 @@
 <div class="page">
-  @if (notice()) { <div class="toast alert good">{{ notice() }}</div> }
+  @if (notice()) { <div class="toast alert">{{ notice() }}</div> }
 
   <div class="section-head">
     <div>
@@ -34,6 +34,10 @@
             <h3>{{ a.name }}</h3>
             <span [class]="'badge ' + (a.status | statusTone)">{{ a.status }}</span>
           </div>
+          <div class="row wrap small">
+            <span class="badge info">{{ a.adapter === 'openai-chat' ? 'OpenAI-compatible' : 'HTTP adapter' }}</span>
+            @if (a.model) { <span class="badge">{{ a.model }}</span> }
+          </div>
           <div class="small" style="color:var(--brand);font-weight:600">{{ a.framework }} · v{{ a.version }} · {{ a.type }}</div>
           <p class="muted small">{{ a.description || 'No description supplied.' }}</p>
           <dl class="small stack" style="margin:0;gap:6px">
@@ -43,7 +47,10 @@
             <div class="row spread"><dt class="muted">Registered</dt><dd style="margin:0">{{ a.createdAt | date: 'mediumDate' }}</dd></div>
             <div><dt class="muted">Endpoint</dt><dd class="mono" style="margin:2px 0 0;word-break:break-all">{{ a.endpoint }}</dd></div>
           </dl>
-          <a class="btn btn-primary" style="margin-top:auto" routerLink="/benchmark/runs/new" [queryParams]="{ agentId: a.id }">Run benchmark</a>
+          <div class="row wrap" style="margin-top:auto">
+            <button class="btn" type="button" [disabled]="!!testingId()" (click)="testAgent(a)">{{ testingId() === a.id ? 'Testing…' : 'Test connection' }}</button>
+            <a class="btn btn-primary" routerLink="/benchmark/runs/new" [queryParams]="{ agentId: a.id }">Run benchmark</a>
+          </div>
         </article>
       }
     </div>
@@ -56,7 +63,7 @@
           <div>
             <span class="eyebrow">Agent adapter</span>
             <h2 id="reg-title">Register an agent</h2>
-            <p class="muted small">The backend invokes this endpoint with taskId, category, prompt and input.</p>
+            <p class="muted small">Choose how Bifrost connects to this agent.</p>
           </div>
           <button class="btn btn-sm" type="button" aria-label="Close" (click)="closeForm()">✕</button>
         </div>
@@ -81,6 +88,20 @@
               </select>
             </div>
             <div class="field">
+              <label for="adapter">Connection adapter</label>
+              <select id="adapter" formControlName="adapter">
+                <option value="http">HTTP agent endpoint</option>
+                <option value="openai-chat">OpenAI-compatible chat API</option>
+              </select>
+            </div>
+            @if (form.controls.adapter.value === 'openai-chat') {
+              <div class="field">
+                <label for="model">Model name *</label>
+                <input id="model" type="text" formControlName="model" placeholder="Example: openai/gpt-oss-20b" />
+                @if (!form.controls.model.value.trim()) { <span class="hint">Required for the OpenAI-compatible adapter.</span> }
+              </div>
+            }
+            <div class="field">
               <label for="version">Version *</label>
               <input id="version" type="text" formControlName="version" />
             </div>
@@ -90,10 +111,15 @@
               @if (form.controls.timeoutSeconds.invalid) { <span class="err">Enter a value between 5 and 600.</span> }
             </div>
             <div class="field span-2">
-              <label for="endpoint">Invocation endpoint *</label>
-              <input id="endpoint" type="url" formControlName="endpoint" placeholder="https://my-agent.example.com/api/invoke" />
-              <span class="hint">The backend requires HTTPS and a public address unless local-development flags are enabled on the server.</span>
+              <label for="endpoint">{{ form.controls.adapter.value === 'openai-chat' ? 'Chat completions endpoint *' : 'Invocation endpoint *' }}</label>
+              <input id="endpoint" type="url" formControlName="endpoint" [placeholder]="form.controls.adapter.value === 'openai-chat' ? 'https://api.example.com/v1/chat/completions' : 'https://my-agent.example.com/api/invoke'" />
+              <span class="hint">Use HTTPS and a public address unless local-development access is enabled on the backend.</span>
               @if (form.controls.endpoint.touched && form.controls.endpoint.invalid) { <span class="err">Enter a complete HTTP or HTTPS URL.</span> }
+            </div>
+            <div class="field span-2">
+              <label for="authEnvVar">Server-side bearer token variable (optional)</label>
+              <input id="authEnvVar" type="text" formControlName="authEnvVar" placeholder="BENCHMARK_AGENT_KEY_GROQ" />
+              <span class="hint">Set the secret in backend/.env. Bifrost accepts variable names beginning with BENCHMARK_AGENT_KEY_; never enter the secret value here.</span>
             </div>
             <div class="field">
               <label for="in-cost">Input cost per 1M tokens (USD)</label>

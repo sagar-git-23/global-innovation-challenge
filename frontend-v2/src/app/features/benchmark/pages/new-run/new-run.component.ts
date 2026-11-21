@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { apiError } from '../../../../core/utils/format';
-import { Agent, StartRunResponse, TaskSuite } from '../../models/benchmark.models';
+import { Agent, StartRunResponse, TaskSuite, ToolSpec } from '../../models/benchmark.models';
 import { BenchmarkApiService } from '../../services/benchmark-api.service';
 
 @Component({
@@ -16,6 +16,7 @@ export class NewRunComponent {
 
   readonly agents = signal<Agent[]>([]);
   readonly suites = signal<TaskSuite[]>([]);
+  readonly toolSpecs = signal<ToolSpec[]>([]);
   readonly loading = signal(true);
   readonly loadError = signal('');
 
@@ -34,10 +35,11 @@ export class NewRunComponent {
   readonly canStart = computed(() => this.selected().size > 0 && !!this.suite() && !this.starting());
 
   constructor() {
-    forkJoin({ agents: this.api.loadAgents(), suites: this.api.getTaskSuites() }).subscribe({
-      next: ({ agents, suites }) => {
+    forkJoin({ agents: this.api.loadAgents(), suites: this.api.getTaskSuites(), toolSpecs: this.api.getToolSpecs() }).subscribe({
+      next: ({ agents, suites, toolSpecs }) => {
         this.agents.set(agents);
         this.suites.set(suites);
+        this.toolSpecs.set(toolSpecs.tools);
         if (suites.length) this.suiteId.set(suites[0].id);
         const preselected = this.route.snapshot.queryParamMap.get('agentId');
         if (preselected && agents.some(a => a.id === preselected)) this.selected.set(new Set([preselected]));

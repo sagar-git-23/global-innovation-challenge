@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import {
   Agent, CreateAgentRequest, LeaderboardEntry, RunDetails, RunSummary,
-  SecurityFinding, StartRunRequest, StartRunResponse, TaskSuite
+  SecurityFinding, StartRunRequest, StartRunResponse, TaskSuite, ToolSpec
 } from '../models/benchmark.models';
 
 @Injectable({ providedIn: 'root' })
@@ -19,12 +19,24 @@ export class BenchmarkApiService {
     return this.http.post<Agent>(`${this.base}/agents`, request);
   }
 
+  testAgent(agentId: string): Observable<AgentTestResult> {
+    return this.http.post<AgentTestResult>(`${this.base}/agents/${encodeURIComponent(agentId)}/test`, {});
+  }
+
   getTaskSuites(): Observable<TaskSuite[]> {
     return this.http.get<TaskSuite[]>(`${this.base}/task-suites`);
   }
 
+  getToolSpecs(): Observable<{ tools: ToolSpec[] }> {
+    return this.http.get<{ tools: ToolSpec[] }>(`${this.base}/tool-specs`);
+  }
+
   startRuns(request: StartRunRequest): Observable<StartRunResponse> {
     return this.http.post<StartRunResponse>(`${this.base}/benchmark-runs`, request);
+  }
+
+  cancelRun(runId: string): Observable<{ id: string; status: 'CANCELLED' }> {
+    return this.http.post<{ id: string; status: 'CANCELLED' }>(`${this.base}/benchmark-runs/${encodeURIComponent(runId)}/cancel`, {});
   }
 
   getRuns(): Observable<RunSummary[]> {
@@ -53,4 +65,12 @@ export class BenchmarkApiService {
       })
     );
   }
+}
+
+export interface AgentTestResult {
+  agentId: string;
+  reachable: boolean;
+  latencyMs: number;
+  message: string;
+  checkedAt: string;
 }

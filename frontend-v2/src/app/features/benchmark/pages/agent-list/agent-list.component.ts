@@ -3,8 +3,8 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { apiError, StatusTonePipe } from '../../../../core/utils/format';
-import { Agent } from '../../models/benchmark.models';
-import { BenchmarkApiService } from '../../services/benchmark-api.service';
+import { Agent, AgentAdapter } from '../../models/benchmark.models';
+import { AgentTestResult, BenchmarkApiService } from '../../services/benchmark-api.service';
 
 @Component({
   selector: 'app-agent-list',
@@ -23,6 +23,7 @@ export class AgentListComponent {
   readonly saving = signal(false);
   readonly formError = signal('');
   readonly notice = signal('');
+  readonly testingId = signal('');
 
   readonly types = [
     { value: 'CUSTOMER_SUPPORT', label: 'Customer support' },
@@ -48,7 +49,10 @@ export class AgentListComponent {
     description: ['', Validators.maxLength(1000)],
     timeoutSeconds: [60, [Validators.required, Validators.min(5), Validators.max(600)]],
     inputCostPer1M: this.fb.control<number | null>(null, [Validators.min(0), Validators.max(100000)]),
-    outputCostPer1M: this.fb.control<number | null>(null, [Validators.min(0), Validators.max(100000)])
+    outputCostPer1M: this.fb.control<number | null>(null, [Validators.min(0), Validators.max(100000)]),
+    adapter: ['http' as AgentAdapter],
+    model: [''],
+    authEnvVar: ['']
   });
 
   constructor() {
@@ -76,12 +80,21 @@ export class AgentListComponent {
   register(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
     const v = this.form.getRawValue();
+    if (v.adapter === 'openai-chat' && !v.model.trim()) {
+      this.formError.set('Enter a model name for the OpenAI-compatible adapter.');
+      return;
+    }
+    if (v.authEnvVar.trim() && !/^BENCHMARK_AGENT_KEY_[A-Z0-9_]{1,50}$/.test(v.authEnvVar.trim())) {
+      this.formError.set('Credential variable names must start with BENCHMARK_AGENT_KEY_ and use uppercase letters, numbers or underscores.');
+      return;
+    }
     this.saving.set(true);
     this.formError.set('');
     this.api.createAgent({
       name: v.name.trim(), type: v.type, framework: v.framework.trim(), version: v.version.trim(),
       endpoint: v.endpoint.trim(), description: v.description.trim(), timeoutSeconds: v.timeoutSeconds,
-      inputCostPer1M: v.inputCostPer1M, outputCostPer1M: v.outputCostPer1M
+      inputCostPer1M: v.inputCostPer1M, outputCostPer1M: v.outputCostPer1M,
+      adapter: v.adapter, model: v.model.trim() || null, authEnvVar: v.authEnvVar.trim() || null
     }).subscribe({
       next: agent => {
         this.agents.update(list => [agent, ...list]);
@@ -92,6 +105,23 @@ export class AgentListComponent {
         setTimeout(() => this.notice.set(''), 4000);
       },
       error: e => { this.formError.set(apiError(e)); this.saving.set(false); }
+    });
+  }
+
+  testAgent(agent: Agent): void {
+    if (this.testingId()) return;
+    this.testingId.set(agent.id);
+    this.notice.set('');
+    this.api.testAgent(agent.id).subscribe({
+      next: result => {
+        this.agents.update(list => list.map(item => item.id === agent.id ? { ...item, status: result.reachable ? 'READY' : 'OFFLINE' } : item));
+        this.notice.set(`${agent.name}: ${result.message}${result.reachable ? ` (${result.latencyMs} ms)` : ''}`);
+        this.testingId.set('');
+      },
+      error: e => {
+        this.notice.set(`${agent.name}: ${apiError(e)}`);
+        this.testingId.set('');
+      }
     });
   }
 }

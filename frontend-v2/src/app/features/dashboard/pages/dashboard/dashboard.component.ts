@@ -31,6 +31,7 @@ export class DashboardComponent {
       { label: 'Registered agents', value: this.agents().length, detail: 'Available for benchmarking' },
       { label: 'Benchmark runs', value: runs.length, detail: `${runs.filter(r => r.status === 'COMPLETED').length} completed · ${runs.filter(r => r.status === 'RUNNING' || r.status === 'QUEUED').length} active` },
       { label: 'Security findings', value: findings.length, detail: `${findings.filter(f => f.severity === 'CRITICAL' || f.severity === 'HIGH').length} critical or high` },
+      { label: 'Policy violations', value: findings.reduce((total, finding) => total + (finding.violations?.length ?? 0), 0), detail: 'Observed during simulated tool use' },
       { label: 'Generated briefs', value: this.briefs().length, detail: 'Every claim is sourced' }
     ];
   });

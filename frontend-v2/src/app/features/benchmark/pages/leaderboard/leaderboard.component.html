@@ -26,7 +26,7 @@
         <table>
           <thead>
             <tr><th>#</th><th>Agent</th><th>Overall</th><th>Functional</th><th>Security</th><th>Quality</th><th>Safety</th>
-              <th>Reliability</th><th>Avg latency</th><th>P95</th><th>Cost</th><th>Attempts</th><th></th></tr>
+              <th>Reliability</th><th>Pass all repeats</th><th>Consistency</th><th>Tool calls</th><th>Violations</th><th>Avg latency</th><th>P95</th><th>Cost</th><th>Attempts</th><th></th></tr>
           </thead>
           <tbody>
             @for (e of rows(); track e.id; let i = $index) {
@@ -39,6 +39,10 @@
                 <td>{{ e.qualityScore | dash }}</td>
                 <td>{{ e.safetyScore | dash }}</td>
                 <td><span [class]="'score ' + (e.requestSuccessRate | tone)">{{ e.requestSuccessRate }}%</span></td>
+                <td>{{ e.passAllRate }}%</td>
+                <td>{{ e.consistencyScore | dash: '%' }}</td>
+                <td>{{ e.toolCallCount }}</td>
+                <td><span [class]="'score ' + (e.violationCount ? 'bad' : 'good')">{{ e.violationCount }}</span></td>
                 <td>{{ e.averageLatencyMs | ms }}</td>
                 <td>{{ e.p95LatencyMs | ms }}</td>
                 <td>{{ e.costUsd | usd }}</td>

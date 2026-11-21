@@ -25,7 +25,7 @@ export class FindingsComponent {
     const sev = this.severity();
     return this.findings().filter(f =>
       (sev === 'ALL' || f.severity === sev) &&
-      (!q || [f.title, f.description, f.affectedAgentName, f.category].join(' ').toLowerCase().includes(q)));
+      (!q || [f.title, f.description, f.affectedAgentName, f.category, f.attackObjective, ...(f.violations ?? []).map(v => v.code)].join(' ').toLowerCase().includes(q)));
   });
 
   count(sev: string): number {

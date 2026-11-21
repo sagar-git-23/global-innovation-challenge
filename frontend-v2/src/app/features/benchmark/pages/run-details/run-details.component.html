@@ -8,19 +8,34 @@
         <h2>{{ r.agentName }} <span class="muted small">{{ r.framework }} · v{{ r.agentVersion }}</span></h2>
         <p class="muted small mono">Run {{ r.id }} · started {{ r.createdAt | date: 'medium' }}</p>
       </div>
-      <span [class]="'badge ' + (r.status | statusTone)">{{ r.status }}</span>
+      <div class="row">
+        <span [class]="'badge ' + (r.status | statusTone)">{{ r.status }}</span>
+        @if (r.status === 'QUEUED' || r.status === 'RUNNING') {
+          <button class="btn btn-sm btn-danger" type="button" [disabled]="cancelling()" (click)="cancel(r.id)">{{ cancelling() ? 'Cancelling…' : 'Cancel run' }}</button>
+        }
+      </div>
     </div>
 
     @if (r.status === 'QUEUED' || r.status === 'RUNNING') {
       <div class="card stack">
         <strong>{{ r.status === 'QUEUED' ? 'Waiting to start…' : 'Evaluating the agent…' }}</strong>
-        <div class="bar indeterminate"><span></span></div>
-        <span class="muted small">{{ r.attemptsCompleted }} task attempt{{ r.attemptsCompleted === 1 ? '' : 's' }} recorded so far. This page refreshes automatically.</span>
+        <div class="bar"><span [style.width.%]="r.progressPercentage"></span></div>
+        <span class="muted small">{{ r.attemptsCompleted }} of {{ r.totalAttempts }} attempts recorded ({{ r.progressPercentage }}%). This page refreshes automatically.</span>
       </div>
     }
     @if (r.status === 'FAILED') {
       <div class="alert bad">Run failed: {{ r.error || 'Unknown error' }}</div>
     }
+    @if (r.attemptsCompleted > 0 && r.requestSuccessRate === 0) {
+      <div class="alert bad stack">
+        <strong>No agent requests succeeded; the score is zero because Bifrost could not get a response.</strong>
+        @for (message of requestErrors(); track message) { <p class="small mono">{{ message }}</p> }
+        <p class="small">Check the endpoint and adapter, then use <strong>Test connection</strong> in Agent Registry before starting another run.</p>
+      </div>
+    } @else if (r.errorRate > 0) {
+      <div class="alert warn">{{ r.errorRate }}% of agent requests failed. Expand failed attempts below to see their errors.</div>
+    }
+    @if (r.status === 'CANCELLED') { <div class="alert warn">Run cancelled after {{ r.attemptsCompleted }} of {{ r.totalAttempts }} attempts.</div> }
 
     <div class="grid cols-4">
       <div class="kpi"><span>Overall score</span><strong [class]="'score ' + (r.overallScore | tone)">{{ r.overallScore }}</strong><small>{{ r.scoreMethod }}</small></div>
@@ -31,6 +46,10 @@
       <div class="kpi"><span>Safety (LLM judge)</span><strong>{{ r.safetyScore | dash }}</strong><small>{{ r.judgeEnabled ? 'Judge enabled' : 'Judge disabled' }}</small></div>
       <div class="kpi"><span>Latency (avg)</span><strong>{{ r.averageLatencyMs | ms }}</strong><small>Median {{ r.medianLatencyMs | ms }} · P95 {{ r.p95LatencyMs | ms }}</small></div>
       <div class="kpi"><span>Cost</span><strong>{{ r.costUsd | usd }}</strong><small>Tokens {{ r.totalTokens | dash }} · pricing coverage {{ r.costCoveragePct }}%</small></div>
+      <div class="kpi"><span>Tool calls</span><strong>{{ r.toolCallCount }}</strong><small>Average {{ r.averageToolCalls | dash }} per successful task</small></div>
+      <div class="kpi"><span>Policy violations</span><strong [class]="'score ' + (r.violationCount ? 'bad' : 'good')">{{ r.violationCount }}</strong><small>{{ r.tasksWithViolations }} attempt{{ r.tasksWithViolations === 1 ? '' : 's' }} affected</small></div>
+      <div class="kpi"><span>Consistency</span><strong>{{ r.consistencyScore | dash: '%' }}</strong><small>Across repeated tasks</small></div>
+      <div class="kpi"><span>Pass rate per task</span><strong>{{ r.passAnyRate }}%</strong><small>All repeats pass: {{ r.passAllRate }}%</small></div>
     </div>
 
     <section class="card">
@@ -61,7 +80,7 @@
                     <td colspan="8" style="background:#faf9f6">
                       <div class="stack">
                         @if (t.error) { <div class="alert bad">{{ t.error }}</div> }
-                        <div><h4>Agent response</h4><pre class="code">{{ t.response || 'No response captured (evidence capture disabled or request failed).' }}</pre></div>
+                        <div><h4>Agent output</h4><pre class="code">{{ t.response || (t.requestOk ? 'Response capture is disabled.' : 'No output: the agent request failed.') }}</pre></div>
                         @if (t.checks?.rules?.length) {
                           <div class="row wrap">
                             <h4>Checks</h4>
@@ -72,6 +91,26 @@
                         }
                         @if (t.judgeFeedback) { <div><h4>Judge feedback</h4><p>{{ t.judgeFeedback }}</p></div> }
                         @if (t.judgeError) { <div class="alert warn">{{ t.judgeError }}</div> }
+                        @if (t.toolCalls.length) {
+                          <div class="stack">
+                            <h4>Observed tool calls ({{ t.toolCallCount }})</h4>
+                            @for (call of t.toolCalls; track call.seq ?? $index) {
+                              <div class="card stack" style="padding:12px;box-shadow:none">
+                                <div class="row spread"><strong>{{ call.tool }}</strong><span class="badge">{{ call.source || 'recorded' }}</span></div>
+                                @if (call.arguments) { <pre class="code">{{ call.arguments | json }}</pre> }
+                              </div>
+                            }
+                          </div>
+                        }
+                        @if (t.violations.length) {
+                          <div class="stack">
+                            <h4>Policy violations</h4>
+                            @for (violation of t.violations; track violation.seq + ':' + violation.code) {
+                              <div class="alert bad"><strong>{{ violation.code }}</strong>: {{ violation.detail }}</div>
+                            }
+                          </div>
+                        }
+                        <p class="muted small">Steps {{ t.stepCount | dash }} · tool calls {{ t.toolCallCount }} · judge tokens {{ t.judgeTokens }}</p>
                         <p class="muted small">Tokens in/out: {{ t.inputTokens | dash }} / {{ t.outputTokens | dash }} · cost {{ t.costUsd | usd }}</p>
                       </div>
                     </td>

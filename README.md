@@ -4,7 +4,7 @@ Briefly creates sourced pre-meeting briefs with an Angular frontend and a FastAP
 
 ## Prerequisites
 
-- Node.js 16.15 or newer and npm 8 or newer
+- Node.js 22.22.3 or newer in the 22.x line, or Node.js 24.15.0 or newer in the 24.x line, and npm
 - Python 3.10 or newer
 - A Neon project with Postgres, pgvector, and an Object Storage bucket
 - Tavily and Groq API keys
@@ -45,10 +45,10 @@ python -m pip install -r requirements.txt
 
 Leave this terminal running. Python 3.10 or newer is supported; Python 3.12 is a good default if you are creating a new environment.
 
-Start the frontend in **PowerShell terminal 2**, from the project root:
+Start the frontend in **PowerShell terminal 2**, from the project root. The Angular app is now in `frontend-v2`:
 
 ```powershell
-cd frontend
+cd frontend-v2
 npm install
 npm start
 ```
@@ -66,6 +66,8 @@ In **New brief**, optionally add PDF, DOCX, or TXT files up to 10 MB. The origin
 - **Test through the API:** in `/docs`, submit `POST /api/briefs` with `subjectType` set to `PERSON`, `subjectName` set to `Satya Nadella`, `meetingTime` set to an ISO timestamp, and `meetingPurpose` set to the purpose above.
 
 ## Bifrost agent benchmarking workspace
+
+For HTTP and OpenAI-compatible agent setup, simulated tool suites, sandbox behavior, and credential configuration, see [backend/BENCHMARKING.md](backend/BENCHMARKING.md).
 
 The Angular app has a separate **Agent Benchmarking · Bifrost** section in the sidebar. It contains an overview, agent registry, benchmark setup, leaderboard, and security findings screens. The existing meeting brief routes and API remain separate.
 

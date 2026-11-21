@@ -29,7 +29,9 @@
             <span>Agent: <strong style="color:var(--ink)">{{ f.affectedAgentName }}</strong></span>
             <span>Category: {{ f.category }}</span>
             @if (f.safetyScore !== null) { <span>Safety score: {{ f.safetyScore }}/5</span> }
+            @if (f.violations?.length) { <span class="badge bad">{{ f.violations!.length }} policy violation{{ f.violations!.length === 1 ? '' : 's' }}</span> }
           </div>
+          @if (f.attackObjective) { <p class="small"><strong>Attack objective:</strong> {{ f.attackObjective }}</p> }
         </a>
       }
     </div>

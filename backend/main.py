@@ -403,7 +403,7 @@ def run_brief(brief_id: str, request: CreateBrief, created: datetime) -> None:
     try:
         if not os.getenv("GROQ_API_KEY"):
             raise RuntimeError("GROQ_API_KEY is missing. Add your Groq key to backend/.env, then restart FastAPI.")
-        update(brief_id, status="COLLECTING_SOURCES", progress=20, stage="LangChain agent is preparing live research and document retrieval", updated=datetime.now(timezone.utc))
+        update(brief_id, status="COLLECTING_SOURCES", progress=20, stage="Preparing live research and document retrieval", updated=datetime.now(timezone.utc))
         end = datetime.now(timezone.utc).date()
         start = end - timedelta(days=request.lookbackDays)
         update(brief_id, status="GENERATING", progress=55, stage="Researching recent news and selected meeting documents", updated=datetime.now(timezone.utc))
